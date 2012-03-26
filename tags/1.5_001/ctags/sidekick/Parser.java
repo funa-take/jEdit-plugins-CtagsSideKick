@@ -44,7 +44,7 @@ import errorlist.DefaultErrorSource.DefaultError;
 
 
 public class Parser extends SideKickParser {
-
+  
 	private static final String SPACES = "\\s+";
 	private ToolBar toolbar = null;
 	
@@ -52,24 +52,24 @@ public class Parser extends SideKickParser {
 	{
 		super(serviceName);
 	}
-
+	
 	public JPanel getPanel() {
 		toolbar = new ToolBar();
 		return toolbar;
 	}
-
+	
 	@Override
 	public SideKickParsedData parse(Buffer buffer,
-									DefaultErrorSource errorSource)
+	  DefaultErrorSource errorSource)
 	{		
 		if (toolbar != null)
 			toolbar.update();
 		ParsedData data =
-			new ParsedData(buffer, buffer.getMode().getName());
+		new ParsedData(buffer, buffer.getMode().getName());
 		runctags(buffer, errorSource, data);
 		return data;
 	}
-
+	
 	private File createTempFile(Buffer buffer)
 	{
 		String prefix = buffer.getName();
@@ -106,7 +106,7 @@ public class Parser extends SideKickParser {
 	}
 	
 	private void runctags(Buffer buffer, DefaultErrorSource errorSource,
-						  ParsedData data)
+	  ParsedData data)
 	{
 		String ctagsExe = jEdit.getProperty("options.CtagsSideKick.ctags_path");
 		String path = buffer.getPath();
@@ -124,6 +124,25 @@ public class Parser extends SideKickParser {
 			options = "";
 		Vector<String> cmdLine = new Vector<String>();
 		cmdLine.add(ctagsExe);
+		
+		// funa edit
+		String encoding = buffer.getStringProperty(Buffer.ENCODING);
+		String upperEncoding = encoding.toUpperCase();
+		String ctagsEncoding = "";
+		
+		if (upperEncoding.indexOf("UTF-8") >= 0){
+		  ctagsEncoding = "utf8";
+		} else if (upperEncoding.indexOf("MS932") >= 0 || upperEncoding.indexOf("SJIS") >= 0){
+		  ctagsEncoding = "sjis";
+		} else if (upperEncoding.indexOf("EUC") >= 0){
+		  ctagsEncoding = "euc";
+		} else {
+		  ctagsEncoding = "";
+		}
+		if (!ctagsEncoding.equals("")){
+		  cmdLine.add("--jcode="+ctagsEncoding);
+		}
+		
 		cmdLine.add("--fields=KsSz");
 		cmdLine.add("--excmd=pattern");
 		cmdLine.add("--sort=no");
@@ -133,6 +152,7 @@ public class Parser extends SideKickParser {
 		cmdLine.add("-");
 		if (path.endsWith("build.xml"))
 			cmdLine.add("--language-force=ant");
+		
 		String [] customOptions = options.split(SPACES);
 		for (int i = 0; i < customOptions.length; i++)
 			cmdLine.add(customOptions[i]);
@@ -144,13 +164,13 @@ public class Parser extends SideKickParser {
 		try {
 			p = Runtime.getRuntime().exec(args);
 			in = new BufferedReader(
-					new InputStreamReader(p.getInputStream()));
+			  new InputStreamReader(p.getInputStream()));
 			String line;
 			Tag prevTag = null;
 			while ((line=in.readLine()) != null)
 			{
 				Hashtable<String, String> info =
-					new Hashtable<String, String>();
+				new Hashtable<String, String>();
 				if (line.endsWith("\n") || line.endsWith("\r"))
 					line = line.substring(0, line.length() - 1);
 				String fields[] = line.split("\t");
@@ -185,7 +205,7 @@ public class Parser extends SideKickParser {
 						{
 							prevEnd = new LinePosition(buffer, curLine, pos);
 							curTag.setStart(
-									new LinePosition(buffer, curLine, pos));
+							  new LinePosition(buffer, curLine, pos));
 						}
 					}
 					else
@@ -210,7 +230,7 @@ public class Parser extends SideKickParser {
 					errorSource.addError(new DefaultError(errorSource, ErrorSource.ERROR,
 						ctagsExe, 0, 0, 0, jEdit.getProperty("messages.CtagsSideKick.badCtagsPath")));
 					return;
-
+					
 				}
 				else
 					in.close();
