@@ -37,6 +37,7 @@ import org.gjt.sp.jedit.MiscUtilities;
 import org.gjt.sp.jedit.jEdit;
 import sidekick.SideKickParsedData;
 import sidekick.SideKickParser;
+import ctags.sidekick.options.GeneralOptionPane;
 import ctags.sidekick.options.SideKickModeOptionsPane;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
@@ -126,21 +127,23 @@ public class Parser extends SideKickParser {
 		cmdLine.add(ctagsExe);
 		
 		// funa edit
-		String encoding = buffer.getStringProperty(Buffer.ENCODING);
-		String upperEncoding = encoding.toUpperCase();
-		String ctagsEncoding = "";
-		
-		if (upperEncoding.indexOf("UTF-8") >= 0){
-		  ctagsEncoding = "utf8";
-		} else if (upperEncoding.indexOf("MS932") >= 0 || upperEncoding.indexOf("SJIS") >= 0){
-		  ctagsEncoding = "sjis";
-		} else if (upperEncoding.indexOf("EUC") >= 0){
-		  ctagsEncoding = "euc";
-		} else {
-		  ctagsEncoding = "";
-		}
-		if (!ctagsEncoding.equals("")){
-		  cmdLine.add("--jcode="+ctagsEncoding);
+		if (jEdit.getBooleanProperty(GeneralOptionPane.USE_JCODE, true)){
+		  String encoding = buffer.getStringProperty(Buffer.ENCODING);
+		  String upperEncoding = encoding.toUpperCase();
+		  String ctagsEncoding = "";
+		  
+		  if (upperEncoding.indexOf("UTF-8") >= 0){
+		    ctagsEncoding = "utf8";
+		  } else if (upperEncoding.indexOf("MS932") >= 0 || upperEncoding.indexOf("SJIS") >= 0){
+		    ctagsEncoding = "sjis";
+		  } else if (upperEncoding.indexOf("EUC") >= 0){
+		    ctagsEncoding = "euc";
+		  } else {
+		    ctagsEncoding = "";
+		  }
+		  if (!ctagsEncoding.equals("")){
+		    cmdLine.add("--jcode="+ctagsEncoding);
+		  }
 		}
 		
 		cmdLine.add("--fields=KsSz");
