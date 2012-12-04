@@ -21,6 +21,9 @@ plugin by Gerd Knops.
 
 package ctags.sidekick;
 import java.io.BufferedReader;
+import java.io.OutputStreamWriter;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -82,10 +85,14 @@ public class Parser extends SideKickParser {
 			prefix = prefix.substring(0,idx);
 		}
 		File f = null;
+		// funa edit
+		String encoding = buffer.getStringProperty(Buffer.ENCODING);
+		BufferedWriter fw = null;
 		try
 		{
 			f = File.createTempFile(prefix, suffix);
-			FileWriter fw = new FileWriter(f);
+			// FileWriter fw = new FileWriter(f);
+			fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), encoding));
 			int size = buffer.getLength();
 			int offset = 0;
 			while (size > 0)
@@ -102,6 +109,12 @@ public class Parser extends SideKickParser {
 		catch(Exception e)
 		{
 			return null;
+		} finally {
+		  if (fw != null){
+		    try {
+		      fw.close();
+		    } catch (Exception e){}
+      }
 		}
 		return f;
 	}
