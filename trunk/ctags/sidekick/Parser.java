@@ -86,7 +86,9 @@ public class Parser extends SideKickParser {
 		}
 		File f = null;
 		// funa edit
-		String encoding = buffer.getStringProperty(Buffer.ENCODING);
+		// String encoding = buffer.getStringProperty(Buffer.ENCODING);
+		// テンポラリファイルはUTF-8固定で書き込む
+		String encoding = "UTF-8";
 		BufferedWriter fw = null;
 		try
 		{
@@ -123,10 +125,12 @@ public class Parser extends SideKickParser {
 	  ParsedData data)
 	{
 		String ctagsExe = jEdit.getProperty("options.CtagsSideKick.ctags_path");
+		String encoding = buffer.getStringProperty(Buffer.ENCODING);
 		String path = buffer.getPath();
 		File f = null;
-		if (MiscUtilities.isURL(path)) // A remote file (URL)
+		if (MiscUtilities.isURL(path) || jEdit.getBooleanProperty(GeneralOptionPane.USE_TEMPORARY, false)) // A remote file (URL)
 		{
+		  encoding = "UTF-8";
 			f = createTempFile(buffer);
 			if (f == null)
 				return;
@@ -141,23 +145,32 @@ public class Parser extends SideKickParser {
 		
 		// funa edit
 		if (jEdit.getBooleanProperty(GeneralOptionPane.USE_JCODE, true)){
-		  String encoding = buffer.getStringProperty(Buffer.ENCODING);
-		  String upperEncoding = encoding.toUpperCase();
 		  String ctagsEncoding = "";
+		  String upperEncoding = encoding.toUpperCase();
 		  
 		  if (upperEncoding.indexOf("UTF-8") >= 0){
 		    ctagsEncoding = "utf8";
-		  } else if (upperEncoding.indexOf("MS932") >= 0 || upperEncoding.indexOf("SJIS") >= 0){
+		  } else if (
+		    upperEncoding.indexOf("MS932") >= 0 
+		    || upperEncoding.indexOf("SJIS") >= 0 
+		    || upperEncoding.indexOf("WINDOWS-31J") >= 0)
+		  {
 		    ctagsEncoding = "sjis";
 		  } else if (upperEncoding.indexOf("EUC") >= 0){
 		    ctagsEncoding = "euc";
 		  } else {
 		    ctagsEncoding = "";
 		  }
+		  if (upperEncoding.indexOf("NATIVE2ASCII") == 0){
+        encoding = "ISO-8859-1";
+      }
+		  
 		  if (!ctagsEncoding.equals("")){
 		    cmdLine.add("--jcode="+ctagsEncoding);
 		  }
 		}
+		
+		String ctagsLang = getCtagsLang(mode, buffer.getName());
 		
 		cmdLine.add("--fields=KsSz");
 		cmdLine.add("--excmd=pattern");
@@ -168,6 +181,9 @@ public class Parser extends SideKickParser {
 		cmdLine.add("-");
 		if (path.endsWith("build.xml"))
 			cmdLine.add("--language-force=ant");
+		if (!"".equals(ctagsLang)) {
+		  cmdLine.add("--language-force="+ctagsLang);
+		}
 		
 		String [] customOptions = options.split(SPACES);
 		for (int i = 0; i < customOptions.length; i++)
@@ -180,7 +196,7 @@ public class Parser extends SideKickParser {
 		try {
 			p = Runtime.getRuntime().exec(args);
 			in = new BufferedReader(
-			  new InputStreamReader(p.getInputStream()));
+			  new InputStreamReader(p.getInputStream(), encoding));
 			String line;
 			Tag prevTag = null;
 			while ((line=in.readLine()) != null)
@@ -257,5 +273,27 @@ public class Parser extends SideKickParser {
 		}
 		if (f != null)
 			f.delete();
+	}
+	
+	private String getCtagsLang(String mode, String fileName) {
+	  Vector<Vector<String>> mapping = GeneralOptionPane.getMapping();
+	  
+	  for(int i = 0; i < mapping.size(); i++) {
+	    String mappingMode = mapping.get(i).get(GeneralOptionPane.MappingModel.COL.MODE.ordinal());
+	    String mappingRegex = mapping.get(i).get(GeneralOptionPane.MappingModel.COL.FILE_REGEX.ordinal());
+	    String mappingLang = mapping.get(i).get(GeneralOptionPane.MappingModel.COL.LANG.ordinal());
+	    
+	    if (!"".equals(mappingMode) && !mappingMode.toLowerCase().equals(mode.toLowerCase())) {
+	      continue;
+	    }
+	    
+	    if (!"".equals(mappingRegex) && !Pattern.matches(mappingRegex, fileName)) {
+	      continue;
+	    }
+	    
+	    return mappingLang;
+	  }
+	  
+	  return "";
 	}
 }
