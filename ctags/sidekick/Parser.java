@@ -163,6 +163,9 @@ public class Parser extends SideKickParser {
 		  }
 		  if (upperEncoding.indexOf("NATIVE2ASCII") == 0){
         encoding = "ISO-8859-1";
+      } else if (upperEncoding.indexOf("UTF-8") >= 0){
+        // UTF-8YもUTF-8として処理する
+        encoding = "UTF-8";
       }
 		  
 		  if (!ctagsEncoding.equals("")){
