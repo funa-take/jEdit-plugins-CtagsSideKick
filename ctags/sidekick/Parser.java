@@ -231,7 +231,9 @@ public class Parser extends SideKickParser {
 					if (curLine == prevTag.getLine())
 					{
 						String def = buffer.getLineText(curLine);
-						Pattern pat = Pattern.compile("\\b" + curTag.getName() + "\\b");
+						// Pattern pat = Pattern.compile("\\b" + curTag.getName() + "\\b");
+						String escapeName = curTag.getName().replaceAll("(\\W)", "\\\\$1");
+						Pattern pat = Pattern.compile("\\b" + escapeName + "\\b");
 						Matcher mat = pat.matcher(def);
 						int pos = mat.find() ? mat.start() : -1;
 						if (pos == -1) // nothing to do, share assets...
