@@ -29,6 +29,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Hashtable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -140,40 +142,28 @@ public class Parser extends SideKickParser {
 		String options = SideKickModeOptionsPane.getProperty(mode, Plugin.CTAGS_MODE_OPTIONS);
 		if (options == null)
 			options = "";
-		Vector<String> cmdLine = new Vector<String>();
+		List<String> cmdLine = new ArrayList<String>();
 		cmdLine.add(ctagsExe);
 		
 		// funa edit
+		String ctagsEncoding = encoding;
+		String upperEncoding = encoding.toUpperCase();
+		if (upperEncoding.indexOf("NATIVE2ASCII") == 0){
+		  ctagsEncoding = "ISO-8859-1";
+		}
+		
 		if (jEdit.getBooleanProperty(GeneralOptionPane.USE_JCODE, true)){
-		  String ctagsEncoding = "";
-		  String upperEncoding = encoding.toUpperCase();
-		  
-		  if (upperEncoding.indexOf("UTF-8") >= 0){
-		    ctagsEncoding = "utf8";
-		  } else if (
-		    upperEncoding.indexOf("MS932") >= 0 
-		    || upperEncoding.indexOf("SJIS") >= 0 
-		    || upperEncoding.indexOf("WINDOWS-31J") >= 0)
-		  {
-		    ctagsEncoding = "sjis";
-		  } else if (upperEncoding.indexOf("EUC") >= 0){
-		    ctagsEncoding = "euc";
-		  } else {
-		    ctagsEncoding = "";
-		  }
-		  if (upperEncoding.indexOf("NATIVE2ASCII") == 0){
-        encoding = "ISO-8859-1";
-      } else if (upperEncoding.indexOf("UTF-8") >= 0){
-        // UTF-8YもUTF-8として処理する
-        encoding = "UTF-8";
-      }
-		  
-		  if (!ctagsEncoding.equals("")){
-		    cmdLine.add("--jcode="+ctagsEncoding);
-		  }
+		  // cmdLine.add("--jcode="+ctagsEncoding);
+		  cmdLine.add("--input-encoding="+ctagsEncoding);
+      cmdLine.add("--output-encoding="+ctagsEncoding);
 		}
 		
 		String ctagsLang = getCtagsLang(mode, buffer.getName());
+		if (path.endsWith("build.xml")) {
+			cmdLine.add("--language-force=ant");
+		} else if (!"".equals(ctagsLang)) {
+		  cmdLine.add("--language-force="+ctagsLang);
+		}
 		
 		cmdLine.add("--fields=KsSz");
 		cmdLine.add("--excmd=pattern");
@@ -182,11 +172,6 @@ public class Parser extends SideKickParser {
 		cmdLine.add("--extra=-q");
 		cmdLine.add("-f");
 		cmdLine.add("-");
-		if (path.endsWith("build.xml"))
-			cmdLine.add("--language-force=ant");
-		if (!"".equals(ctagsLang)) {
-		  cmdLine.add("--language-force="+ctagsLang);
-		}
 		
 		String [] customOptions = options.split(SPACES);
 		for (int i = 0; i < customOptions.length; i++)
@@ -199,7 +184,7 @@ public class Parser extends SideKickParser {
 		try {
 			p = Runtime.getRuntime().exec(args);
 			in = new BufferedReader(
-			  new InputStreamReader(p.getInputStream(), encoding));
+			  new InputStreamReader(p.getInputStream(), ctagsEncoding));
 			String line;
 			Tag prevTag = null;
 			while ((line=in.readLine()) != null)
