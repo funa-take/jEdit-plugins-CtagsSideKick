@@ -159,9 +159,7 @@ public class Parser extends SideKickParser {
 		}
 		
 		String ctagsLang = getCtagsLang(mode, buffer.getName());
-		if (path.endsWith("build.xml")) {
-			cmdLine.add("--language-force=ant");
-		} else if (!"".equals(ctagsLang)) {
+		if (!"".equals(ctagsLang)) {
 		  cmdLine.add("--language-force="+ctagsLang);
 		}
 		
